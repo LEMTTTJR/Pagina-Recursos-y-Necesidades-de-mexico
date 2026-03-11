@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recursos y Necesidades De Mexico</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    :root {
+      --bg: #f4fbf7;
+      --text: #1a3a34;
+      --card: #ffffff;
+      --primary: #1b7a61;
+      --primary-2: #56b995;
+      --shadow: 0 12px 30px rgba(10, 60, 48, 0.12);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: radial-gradient(circle at 15% 20%, #daf6eb 0%, transparent 30%), var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+    .bg-orb { position: fixed; border-radius: 50%; filter: blur(2px); z-index: -1; opacity: 0.35; }
+    .orb-1 { width: 320px; height: 320px; background: #7de2c3; top: -80px; right: -80px; }
+    .orb-2 { width: 260px; height: 260px; background: #4fb08c; bottom: -90px; left: -70px; }
+    .hero {
+      text-align: center;
+      padding: 88px 20px 60px;
+      background: linear-gradient(130deg, #0f3d33, #1b7a61, #56b995);
+      color: #fff;
+      clip-path: ellipse(150% 100% at 50% 0%);
+    }
+    .hero h1 { font-size: clamp(2rem, 5vw, 3.5rem); letter-spacing: 1px; }
+    .tag { display: inline-block; margin-bottom: 10px; padding: 6px 12px; border: 1px solid rgba(255,255,255,0.45); border-radius: 999px; font-size: 0.9rem; }
+    .subtitle { margin: 14px auto 22px; max-width: 720px; opacity: 0.95; }
+    .btn { border: none; background: #fff; color: #0f3d33; padding: 10px 16px; border-radius: 10px; font-weight: 700; cursor: pointer; }
+    nav { position: sticky; top: 0; z-index: 50; display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; padding: 10px; background: rgba(14,56,46,0.95); backdrop-filter: blur(4px); }
+    nav a { color: #fff; text-decoration: none; padding: 8px 12px; border-radius: 8px; font-weight: 600; }
+    nav a:hover { background: rgba(255,255,255,0.15); }
+    main section { max-width: 1100px; margin: 0 auto; padding: 58px 20px; }
+    h2 { margin-bottom: 18px; color: #0e5948; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; }
+    .card { background: var(--card); border: 1px solid #d9eee6; border-radius: 16px; padding: 20px; box-shadow: var(--shadow); transform: translateY(24px); opacity: 0; transition: transform 0.5s ease, opacity 0.5s ease; }
+    .card.visible { transform: translateY(0); opacity: 1; }
+    .estado-info { margin-top: 12px; font-weight: 600; font-size: 1rem; color: var(--primary); }
+    .chart-card { padding: 16px; }
+    .quiz button { margin-bottom: 10px; width: 100%; text-align: left; border: none; padding: 10px; border-radius: 10px; background: #eaf7f1; cursor: pointer; }
+    .quiz button:hover { background: #d6efe5; }
+    footer { margin-top: 30px; text-align: center; padding: 24px; background: #0f3d33; color: #fff; }
+    .leaf { position: fixed; top: -20px; font-size: 20px; pointer-events: none; animation: fall linear infinite; opacity: 0.7; }
+    @keyframes fall { from { transform: translateY(-20px) rotate(0deg); } to { transform: translateY(105vh) rotate(300deg); } }
+    body.dark { --bg: #081a16; --text: #d6f5ea; --card: #123129; --shadow: 0 12px 28px rgba(0,0,0,0.4); }
+    body.dark h2 { color: #80dcb8; }
+    body.dark nav { background: rgba(5,22,18,0.96); }
+
+    #mapaLeaflet {
+      width: 100%;
+      height: 420px;
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      border: 2px solid #cae9df;
+      z-index: 1;
+    }
+    .leaflet-container { border-radius: 16px; font-family: "Segoe UI", sans-serif; }
+    .leaflet-popup-content-wrapper {
+      background: #0f3d33;
+      color: #fff;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+    .leaflet-popup-tip { background: #0f3d33; }
+    .leaflet-popup-content { font-size: 0.95rem; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="bg-orb orb-1"></div>
+  <div class="bg-orb orb-2"></div>
+
+  <header class="hero">
+    <p class="tag">Explora · Aprende · Actúa</p>
+    <h1>Recursos Y Necesidades De Mexico</h1>
+    <p class="subtitle">Una vista creativa e interactiva sobre recursos naturales, desafíos sociales y desarrollo económico.</p>
+    <button id="themeButton" class="btn">🌙 Cambiar tema</button>
+  </header>
+
+  <nav>
+    <a href="#recursos">Recursos</a>
+    <a href="#problemas">Retos</a>
+    <a href="#sectores">Sectores</a>
+    <a href="#mapa">Mapa</a>
+    <a href="#grafica">Datos</a>
+    <a href="#quiz">Quiz</a>
+    <a href="#referencias">Referencias</a>
+  </nav>
+
+  <main>
+  <section id="recursos">
+  <h2>Recursos Naturales</h2>
+  <div class="grid">
+
+    <article class="card">
+      <h3>🌱 Renovables</h3>
+
+      <p>
+      Los recursos naturales renovables son aquellos que pueden regenerarse
+      de manera natural en periodos relativamente cortos si se utilizan de forma
+      responsable. Estos recursos son fundamentales para el desarrollo sostenible
+      del país.
+      </p>
+
+      <p>
+      En México destacan diversos recursos renovables como los bosques,
+      las selvas tropicales, los ríos, lagos, la energía solar, la energía eólica
+      y los recursos pesqueros. Gracias a su ubicación geográfica,
+      México tiene uno de los mayores potenciales de energía solar del mundo,
+      especialmente en el norte del país.
+      </p>
+
+      <p>
+      El aprovechamiento adecuado de estos recursos permite generar energía limpia,
+      conservar los ecosistemas naturales y reducir el impacto ambiental causado
+      por el uso excesivo de combustibles fósiles.
+      </p>
+    </article>
+
+    <article class="card">
+      <h3>⛏️ No renovables</h3>
+
+      <p>
+      Los recursos naturales no renovables son aquellos que existen en cantidades
+      limitadas en la naturaleza y tardan millones de años en formarse.
+      Una vez que se extraen y se utilizan, no pueden regenerarse en un corto
+      periodo de tiempo.
+      </p>
+
+      <p>
+      Entre los recursos no renovables más importantes de México se encuentran
+      el petróleo, el gas natural, el carbón mineral y diversos minerales
+      como el oro, la plata, el cobre y el hierro.
+      </p>
+
+      <p>
+      El petróleo ha sido históricamente uno de los recursos más importantes
+      para la economía mexicana, especialmente en regiones como el Golfo de México,
+      donde se encuentran importantes plataformas petroleras.
+      </p>
+
+      <p>
+      Sin embargo, el uso excesivo de estos recursos puede provocar problemas
+      ambientales y económicos, por lo que actualmente se busca promover
+      el uso de energías renovables.
+      </p>
+    </article>
+
+  </div>
+<section id="problemas">
+  <h2>Retos Sociales</h2>
+
+  <div class="grid">
+
+    <article class="card">
+      <h3>📉 Pobreza</h3>
+
+      <p>
+      La pobreza es uno de los principales problemas sociales en México.
+      Se refiere a la situación en la que las personas no tienen ingresos
+      suficientes para cubrir sus necesidades básicas como alimentación,
+      vivienda, educación y servicios de salud.
+      </p>
+
+      <p>
+      Según datos del CONEVAL, millones de mexicanos viven en condiciones
+      de pobreza, especialmente en zonas rurales y comunidades indígenas.
+      </p>
+
+      <p>
+      La pobreza puede provocar desigualdad social, falta de oportunidades
+      laborales y dificultades para acceder a servicios básicos que permitan
+      mejorar la calidad de vida.
+      </p>
+    </article>
+
+    <article class="card">
+      <h3>🧰 Desempleo</h3>
+
+      <p>
+      El desempleo ocurre cuando las personas que desean trabajar no
+      encuentran oportunidades laborales disponibles.
+      </p>
+
+      <p>
+      Este problema afecta directamente a la economía de las familias
+      y limita el desarrollo económico del país.
+      </p>
+
+      <p>
+      Entre las principales causas del desempleo se encuentran:
+      </p>
+
+      <p>
+      • Falta de oportunidades laborales <br>
+      • Bajo nivel educativo <br>
+      • Crisis económicas <br>
+      • Automatización de procesos industriales
+      </p>
+    </article>
+
+    <article class="card">
+      <h3>🏪 Economía informal</h3>
+
+      <p>
+      La economía informal incluye todas aquellas actividades económicas
+      que no están registradas oficialmente ante el gobierno.
+      </p>
+
+      <p>
+      En México una gran parte de la población trabaja en el sector informal,
+      realizando actividades como el comercio ambulante, trabajos temporales
+      o pequeños negocios sin registro fiscal.
+      </p>
+
+      <p>
+      Aunque estas actividades generan ingresos para muchas familias,
+      también presentan desventajas como la falta de seguridad social,
+      prestaciones laborales y estabilidad económica.
+      </p>
+    </article>
+
+  </div>
+</section>
+<section id="sectores">
+  <h2>Sectores Económicos</h2>
+
+  <div class="grid">
+
+    <article class="card">
+      <h3>🌾 Desarrollo Agropecuario</h3>
+
+      <p>
+      El sector agropecuario incluye actividades relacionadas con la
+      agricultura, ganadería, pesca y explotación forestal.
+      </p>
+
+      <p>
+      Este sector es fundamental para la producción de alimentos
+      y materias primas necesarias para la industria.
+      </p>
+
+      <p>
+      Entre los principales productos agrícolas de México destacan
+      el maíz, frijol, trigo, café, aguacate, caña de azúcar y agave.
+      </p>
+
+      <p>
+      Además, México es uno de los principales exportadores de productos
+      agrícolas a nivel mundial.
+      </p>
+    </article>
+
+    <article class="card">
+      <h3>🏭 Desarrollo Industrial</h3>
+
+      <p>
+      El sector industrial se encarga de transformar materias primas
+      en productos elaborados mediante procesos de manufactura.
+      </p>
+
+      <p>
+      México tiene una industria muy importante en sectores como:
+      </p>
+
+      <p>
+      • Industria automotriz <br>
+      • Industria electrónica <br>
+      • Industria alimentaria <br>
+      • Industria petrolera
+      </p>
+
+      <p>
+      Este sector genera millones de empleos y contribuye
+      significativamente al crecimiento económico del país.
+      </p>
+    </article>
+
+    <article class="card">
+      <h3>🛰️ Desarrollo de Servicios</h3>
+
+      <p>
+      El sector servicios incluye actividades que satisfacen
+      necesidades de la población sin producir bienes materiales.
+      </p>
+
+      <p>
+      Entre los servicios más importantes en México se encuentran:
+      </p>
+
+      <p>
+      Transporte, telecomunicaciones, vivienda,
+      agua potable, turismo, educación y salud.
+      </p>
+
+      <p>
+      Este sector es actualmente uno de los más grandes
+      de la economía mexicana.
+      </p>
+    </article>
+
+  </div>
+</section>
+
+    <section id="mapa">
+      <h2>Mapa inspirador</h2>
+      <div id="mapaLeaflet"></div>
+      <p id="estado" class="estado-info">📍 Haz clic en un marcador para descubrir una región destacada.</p>
+    </section>
+
+    <section id="grafica">
+      <h2>Datos rápidos</h2>
+      <div class="card chart-card"><canvas id="graficaMexico" width="400" height="200"></canvas></div>
+    </section>
+
+    <section id="quiz">
+      <h2>Mini quiz</h2>
+      <div class="quiz card">
+        <p id="pregunta"></p>
+        <div id="respuestas"></div>
+        <p id="puntuacion"></p>
+      </div>
+    </section>
+
+    <section id="referencias">
+      <h2>Referencias (APA)</h2>
+      <p>INEGI. (2023). <em>Estadísticas económicas y sociales de México</em>.</p>
+      <p>SEMARNAT. (2022). <em>Informe ambiental de México</em>.</p>
+      <p>Banco Mundial. (2023). <em>Desarrollo económico</em>.</p>
+    </section>
+  </main>
+
+  <footer>Proyecto académico · Recursos y necesidades de México</footer>
+
+  <script>
+    // ── Tema ──────────────────────────────────────────────
+    document.getElementById("themeButton").addEventListener("click", () => {
+      document.body.classList.toggle("dark");
+    });
+
+    // ── Animación cards ───────────────────────────────────
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((e) => { if (e.isIntersecting) e.target.classList.add("visible"); });
+    }, { threshold: 0.15 });
+    document.querySelectorAll(".card").forEach((c) => observer.observe(c));
+
+    // ── Mapa Leaflet (oscuro) ─────────────────────────────
+    const map = L.map("mapaLeaflet", {
+      center: [23.6, -102.5],
+      zoom: 5,
+      zoomControl: true,
+      scrollWheelZoom: false
+    });
+
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+      attribution: '© <a href="https://www.openstreetmap.org/">OpenStreetMap</a> © <a href="https://carto.com/">CARTO</a>',
+      subdomains: "abcd",
+      maxZoom: 19
+    }).addTo(map);
+
+    // Icono verde con glow
+    const iconoVerde = L.divIcon({
+      className: "",
+      html: `<div style="
+        width:16px; height:16px;
+        background:#56b995;
+        border:3px solid #fff;
+        border-radius:50%;
+        box-shadow:0 0 10px rgba(86,185,149,0.8), 0 2px 8px rgba(0,0,0,0.5);
+      "></div>`,
+      iconSize: [16, 16],
+      iconAnchor: [8, 8]
+    });
+
+    const estadoEl = document.getElementById("estado");
+
+    const lugares = [
+      { coords: [19.43, -99.13],  nombre: "Ciudad de México",    info: "🏙️ Capital del país. Centro político, económico y cultural." },
+      { coords: [25.67, -100.31], nombre: "Monterrey",           info: "🏭 Capital industrial del norte. Hub tecnológico y financiero." },
+      { coords: [20.66, -103.35], nombre: "Guadalajara",         info: "💻 Silicon Valley mexicano. Centro de la industria tequilera." },
+      { coords: [21.16, -86.85],  nombre: "Cancún",              info: "🏖️ Principal destino turístico. Motor del turismo internacional." },
+      { coords: [29.07, -110.95], nombre: "Hermosillo (Sonora)", info: "☀️ Energía solar y minería estratégica del noroeste." },
+      { coords: [16.75, -93.12],  nombre: "Tuxtla (Chiapas)",    info: "🌿 Biodiversidad única, café de altura y selva tropical." },
+      { coords: [19.18, -96.14],  nombre: "Veracruz",            info: "⚓ Puerto más importante del Golfo. Petróleo y agro." },
+      { coords: [20.97, -89.62],  nombre: "Mérida (Yucatán)",    info: "🏛️ La ciudad blanca. Turismo cultural y henequén." },
+      { coords: [32.52, -117.04], nombre: "Tijuana",             info: "🌉 Frontera norte. Manufactura maquiladora y comercio." },
+      { coords: [24.02, -104.66], nombre: "Durango",             info: "🌲 Bosques templados y producción forestal del país." }
+    ];
+
+    lugares.forEach(({ coords, nombre, info }) => {
+      const marker = L.marker(coords, { icon: iconoVerde }).addTo(map);
+      marker.bindPopup(`<strong>${nombre}</strong><br>${info}`, { maxWidth: 220 });
+      marker.on("click", () => {
+        estadoEl.textContent = `📍 ${nombre}: ${info.replace(/^\S+\s/, "")}`;
+      });
+    });
+
+    // ── Gráfica ───────────────────────────────────────────
+    new Chart(document.getElementById("graficaMexico"), {
+      type: "bar",
+      data: {
+        labels: ["Pobreza", "Economía informal", "Empleo formal"],
+        datasets: [{ label: "Porcentaje estimado", data: [43, 55, 45], backgroundColor: ["#1b7a61", "#56b995", "#0f3d33"], borderRadius: 8 }]
+      },
+      options: { responsive: true, plugins: { legend: { labels: { color: "#1a3a34" } } }, scales: { y: { beginAtZero: true } } }
+    });
+
+    // ── Quiz ──────────────────────────────────────────────
+    const quiz = [
+      { p: "¿Cuál de estos recursos es no renovable?", r: ["Energía eólica", "Petróleo", "Bosques"], c: 1 },
+      { p: "¿Qué sector se enfoca en producción de alimentos?", r: ["Agropecuario", "Servicios", "Financiero"], c: 0 },
+      { p: "¿Qué reto afecta directamente la calidad de vida?", r: ["Pobreza", "Turismo", "Exportación"], c: 0 }
+    ];
+    let actual = 0, puntos = 0;
+
+    function cargarPregunta() {
+      document.getElementById("pregunta").textContent = quiz[actual].p;
+      const respuestas = document.getElementById("respuestas");
+      respuestas.innerHTML = "";
+      quiz[actual].r.forEach((respuesta, i) => {
+        const btn = document.createElement("button");
+        btn.textContent = respuesta;
+        btn.addEventListener("click", () => responder(i));
+        respuestas.appendChild(btn);
+      });
+    }
+
+    function responder(i) {
+      if (i === quiz[actual].c) puntos++;
+      actual++;
+      if (actual < quiz.length) {
+        cargarPregunta();
+      } else {
+        document.getElementById("pregunta").textContent = "¡Quiz terminado!";
+        document.getElementById("respuestas").innerHTML = "";
+        document.getElementById("puntuacion").textContent = `Puntuación: ${puntos} de ${quiz.length}`;
+      }
+    }
+    cargarPregunta();
+
+    // ── Hojas animadas ────────────────────────────────────
+    function crearHoja() {
+      const hoja = document.createElement("div");
+      hoja.className = "leaf";
+      hoja.textContent = "🍃";
+      hoja.style.left = `${Math.random() * 100}vw`;
+      hoja.style.animationDuration = `${5 + Math.random() * 5}s`;
+      document.body.appendChild(hoja);
+      setTimeout(() => hoja.remove(), 10000);
+    }
+    setInterval(crearHoja, 900);
+  </script>
+</body>
+</html>
